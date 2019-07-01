@@ -798,7 +798,7 @@ public class StringUtil extends StringUtilRt {
   @Contract(pure = true)
   public static String capitalizeWords(@NotNull String text,
                                        boolean allWords) {
-    return capitalizeWords(text, " \t\n\r\f", allWords, false);
+    return capitalizeWords(text, " \t\n\r\f([<", allWords, true);
   }
 
   @NotNull
@@ -2839,6 +2839,24 @@ public class StringUtil extends StringUtilRt {
     if (s1 == null) return -1;
     if (s2 == null) return 1;
     return ignoreCase ? s1.compareToIgnoreCase(s2) : s1.compareTo(s2);
+  }
+
+  @Contract(pure = true)
+  public static int compare(@Nullable CharSequence s1, @Nullable CharSequence s2, boolean ignoreCase) {
+    if (s1 == s2) return 0;
+    if (s1 == null) return -1;
+    if (s2 == null) return 1;
+
+    int length1 = s1.length();
+    int length2 = s2.length();
+    int i = 0;
+    for (; i < length1 && i < length2; i++) {
+      int diff = compare(s1.charAt(i), s2.charAt(i), ignoreCase);
+      if (diff != 0) {
+        return diff;
+      }
+    }
+    return length1 - length2;
   }
 
   @Contract(pure = true)

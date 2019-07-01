@@ -10,9 +10,9 @@ import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.ui.IconManager;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.scale.JBUIScale;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.ui.ColorIcon;
-import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ public class HighlightDisplayLevel {
   private static final TextAttributesKey DO_NOT_SHOW_KEY = TextAttributesKey.createTextAttributesKey("DO_NOT_SHOW");
   public static final HighlightDisplayLevel DO_NOT_SHOW = new HighlightDisplayLevel(HighlightSeverity.INFORMATION, createIconByMask(JBColor.gray));
   /**
-   * use #WEAK_WARNING instead
+   * @deprecated use {@link #WEAK_WARNING} instead
    */
   @Deprecated
   public static final HighlightDisplayLevel INFO = new HighlightDisplayLevel(HighlightSeverity.INFO, createIconByKey(DO_NOT_SHOW_KEY));
@@ -110,7 +110,7 @@ public class HighlightDisplayLevel {
   }
 
   public static int getEmptyIconDim() {
-    return JBUI.scale(14);
+    return JBUIScale.scale(14);
   }
 
   public static Icon createIconByKey(@NotNull TextAttributesKey key) {
@@ -178,8 +178,8 @@ public class HighlightDisplayLevel {
     @Override
     public void paintIcon(Component c, Graphics g, int x, int y) {
       g.setColor(getColor());
-      int shift = JBUI.scale(2);
-      int size = JBUI.scale(10);
+      int shift = JBUIScale.scale(2);
+      int size = JBUIScale.scale(10);
       g.fillRect(x + shift, y + shift, size, size);
     }
 

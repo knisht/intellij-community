@@ -55,6 +55,12 @@ public class ShExternalFormatter implements ExternalFormatProcessor {
     return range;
   }
 
+  @Nullable
+  @Override
+  public String indent(@NotNull PsiFile source, int lineStartOffset) {
+    return null;
+  }
+
   private void doFormat(@NotNull Project project, @Nullable VirtualFile file) {
     if (file == null || !file.exists()) return;
 
@@ -65,7 +71,7 @@ public class ShExternalFormatter implements ExternalFormatProcessor {
     CodeStyleSettings settings = CodeStyle.getSettings(psiFile);
 
     ShCodeStyleSettings shSettings = settings.getCustomSettings(ShCodeStyleSettings.class);
-    String shFmtExecutable = shSettings.SHFMT_PATH;
+    String shFmtExecutable = ShSettings.getShfmtPath();
     if (ShSettings.I_DO_MIND.equals(shFmtExecutable)) return;
 
     if (!ShShfmtFormatterUtil.isValidPath(shFmtExecutable)) {
@@ -82,7 +88,7 @@ public class ShExternalFormatter implements ExternalFormatProcessor {
         }));
       notification.addAction(NotificationAction.createSimple("No, thanks", () -> {
         notification.expire();
-        shSettings.SHFMT_PATH = ShSettings.I_DO_MIND;
+        ShSettings.setShfmtPath(ShSettings.I_DO_MIND);
       }));
       Notifications.Bus.notify(notification);
       return;

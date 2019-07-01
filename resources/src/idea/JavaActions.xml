@@ -126,11 +126,11 @@
       </group>
 
       <separator/>
-      <group internal="true" text="Cached value profiler" popup="true">
+      <group internal="true" text="Cached Value Profiler" popup="true">
         <action id="TurnOnOffCachedValueProfilerAction" class="com.intellij.internal.cachedValueProfiler.TurnOnOffCachedValueProfilerAction"
-                text="Turn on cached value profiler" internal="true"/>
+                text="Turn on Cached Value Profiler" internal="true"/>
         <action id="DumpCachedValueProfilerInfoAction" class="com.intellij.internal.cachedValueProfiler.DumpCachedValueProfilerInfoAction"
-                text="Dump results" internal="true"/>
+                text="Dump Results" internal="true"/>
       </group>
 
       <separator/>
@@ -140,7 +140,7 @@
                 text="Mark File Dirty"/>
         <separator/>
         <action id="CheckVfsSanity" internal="true" class="com.intellij.openapi.vfs.newvfs.persistent.CheckSanityAction"
-                text="Check VFS sanity"/>
+                text="Check VFS Sanity"/>
         <action id="LoadAllContent" internal="true" class="com.intellij.internal.LoadAllContentsAction" text="Load All Files Content"/>
         <action id="LoadAllVFSContent" internal="true" class="com.intellij.internal.LoadAllVfsStoredContentsAction"
                 text="Load All VFS Stored Files Content"/>
@@ -163,6 +163,12 @@
     <action internal="true" id="TestParseEventLogWhitelistAction"
             class="com.intellij.internal.statistic.actions.TestParseEventLogWhitelistAction"
             text="Test Parsing Event Log Whitelist...">
+      <add-to-group group-id="FeatureUsage.Internal" anchor="last"/>
+    </action>
+
+    <action internal="true" id="CollectFUStatisticsAction"
+            class="com.intellij.internal.statistic.actions.CollectFUStatisticsAction"
+            text="Collect Statistics from Collector...">
       <add-to-group group-id="FeatureUsage.Internal" anchor="last"/>
     </action>
 
@@ -785,13 +791,6 @@
       <reference ref="EditorPopupMenu"/>
     </group>
 
-    <group id="MethodChainHintsContextMenu" popup="true">
-      <action id="MethodChainHintAction"
-              class="com.intellij.codeInsight.hints.MethodChainHintTurningAction"
-              text="Show method chain hints"/>
-      <separator/>
-      <reference ref="EditorPopupMenu"/>
-    </group>
 
     <action id="MethodOverloadSwitchUp" class="com.intellij.codeInsight.editorActions.JavaMethodOverloadSwitchUpAction"/>
     <action id="MethodOverloadSwitchDown" class="com.intellij.codeInsight.editorActions.JavaMethodOverloadSwitchDownAction" />

@@ -28,6 +28,7 @@ import com.intellij.openapi.extensions.*;
 import com.intellij.openapi.extensions.impl.ExtensionPointImpl;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.impl.LoadTextUtil;
+import com.intellij.openapi.fileTypes.FileTypeRegistry;
 import com.intellij.openapi.fileTypes.FileTypes;
 import com.intellij.openapi.paths.WebReference;
 import com.intellij.openapi.project.Project;
@@ -36,7 +37,7 @@ import com.intellij.openapi.ui.Queryable;
 import com.intellij.openapi.util.ActionCallback;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.SystemInfoRt;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.openapi.util.text.StringUtil;
@@ -583,7 +584,7 @@ public class PlatformTestUtil {
 
   @NotNull
   public static String getJavaExe() {
-    return SystemProperties.getJavaHome() + (SystemInfoRt.isWindows ? "\\bin\\java.exe" : "/bin/java");
+    return SystemProperties.getJavaHome() + (SystemInfo.isWindows ? "\\bin\\java.exe" : "/bin/java");
   }
 
   @NotNull
@@ -720,7 +721,7 @@ public class PlatformTestUtil {
     if (doc != null) {
       return doc.getText();
     }
-    if (!file.getFileType().isBinary() || file.getFileType() == FileTypes.UNKNOWN) {
+    if (!file.getFileType().isBinary() || FileTypeRegistry.getInstance().isFileOfType(file, FileTypes.UNKNOWN)) {
       return LoadTextUtil.getTextByBinaryPresentation(file.contentsToByteArray(false), file).toString();
     }
     return null;

@@ -12,7 +12,7 @@ class InferMethodParametersTypesIntentionTest extends GrIntentionTestCase {
 
   final LightProjectDescriptor projectDescriptor = GroovyProjectDescriptors.GROOVY_3_0
   InferMethodParametersTypesIntentionTest() {
-    super("Infer method parameters types")
+    super("Add explicit types to parameters")
   }
 
 

@@ -74,8 +74,6 @@ public class CodeInsightSettings implements PersistentStateComponent<Element>, C
   public boolean SHOW_INFERRED_ANNOTATIONS_INLINE;
 
 
-  public boolean SHOW_METHOD_CHAIN_TYPES_INLINE = true;
-
   public boolean SHOW_PARAMETER_NAME_HINTS_ON_COMPLETION;
   public boolean AUTO_POPUP_PARAMETER_INFO = true;
   public int PARAMETER_INFO_DELAY = 1000;
@@ -154,7 +152,7 @@ public class CodeInsightSettings implements PersistentStateComponent<Element>, C
   public boolean INDENT_TO_CARET_ON_PASTE;
 
   @MagicConstant(intValues = {YES, NO, ASK})
-  public int ADD_IMPORTS_ON_PASTE = ASK;
+  public int ADD_IMPORTS_ON_PASTE = YES;
   public static final int YES = 1;
   public static final int NO = 2;
   public static final int ASK = 3;

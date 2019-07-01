@@ -43,12 +43,12 @@ import org.jdom.JDOMException;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -77,7 +77,6 @@ public class PluginManagerCore {
   private static final TObjectIntHashMap<PluginId> ourId2Index = new TObjectIntHashMap<>();
   private static final String MODULE_DEPENDENCY_PREFIX = "com.intellij.module";
   private static final Map<String, IdeaPluginDescriptorImpl> ourModulesToContainingPlugins = new THashMap<>();
-  private static final PluginClassCache ourPluginClasses = new PluginClassCache();
   private static final String SPECIAL_IDEA_PLUGIN = "IDEA CORE";
   private static final String PROPERTY_PLUGIN_PATH = "plugin.path";
 
@@ -92,6 +91,8 @@ public class PluginManagerCore {
 
   @SuppressWarnings("StaticNonFinalField")
   public static volatile boolean isUnitTestMode = Boolean.getBoolean("idea.is.unit.test");
+
+  @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
   private static boolean ourUnitTestWithBundledPlugins = Boolean.getBoolean("idea.run.tests.with.bundled.plugins");
 
   private static final String PLUGIN_IS_DISABLED_REASON = "Plugin is disabled";
@@ -119,7 +120,7 @@ public class PluginManagerCore {
   private static final List<Runnable> ourDisabledPluginsListeners = new CopyOnWriteArrayList<>();
 
   /**
-   * Returns list of all available plugin descriptors (bundled and custom, include disabled ones). Use {@link #getLoadedPlugins(StartupProgress)}
+   * Returns list of all available plugin descriptors (bundled and custom, include disabled ones). Use {@link #getLoadedPlugins()}
    * if you need to get loaded plugins only.
    *
    * <p>
@@ -386,10 +387,6 @@ public class PluginManagerCore {
     return true;
   }
 
-  public static void addPluginClass(@NotNull PluginId pluginId) {
-    ourPluginClasses.addPluginClass(pluginId);
-  }
-
   /**
    * This is an internal method, use {@link PluginException#createByClass(String, Throwable, Class)} instead.
    */
@@ -414,13 +411,34 @@ public class PluginManagerCore {
     if (className.startsWith("java.") || className.startsWith("javax.") || className.startsWith("kotlin.") || className.startsWith("groovy.")) {
       return null;
     }
-
-    for (IdeaPluginDescriptor descriptor : getPlugins()) {
-      if (hasLoadedClass(className, descriptor.getPluginClassLoader())) {
-        return descriptor.getPluginId();
-      }
+    IdeaPluginDescriptor result = null;
+    for (IdeaPluginDescriptor o : getPlugins()) {
+      if (!hasLoadedClass(className, o.getPluginClassLoader())) continue;
+      result = o;
+      break;
     }
-    return null;
+    if (result == null) return null;
+
+    // return if the found plugin is not "core" or the package is obviously "core"
+    if (!result.getPluginId().getIdString().equals(CORE_PLUGIN_ID) ||
+        className.startsWith("com.jetbrains.") || className.startsWith("org.jetbrains.") ||
+        className.startsWith("com.intellij.") || className.startsWith("org.intellij.") ||
+        className.startsWith("com.android.") ||
+        className.startsWith("git4idea.") || className.startsWith("org.angularjs.")) {
+      return result.getPluginId();
+    }
+    // otherwise we need to check plugins with use-idea-classloader="true"
+    String root = PathManager.getResourceRoot(result.getPluginClassLoader(), "/" + className.replace('.', '/') + ".class");
+    if (root == null) return null;
+    for (IdeaPluginDescriptor o : getPlugins()) {
+      if (!o.getUseIdeaClassLoader()) continue;
+      File path = o.getPath();
+      String pluginPath = path == null ? null : FileUtil.toSystemIndependentName(path.getPath());
+      if (pluginPath == null || !root.startsWith(pluginPath)) continue;
+      result = o;
+      break;
+    }
+    return result.getPluginId();
   }
 
   private static boolean hasLoadedClass(@NotNull String className, ClassLoader loader) {
@@ -435,10 +453,6 @@ public class PluginManagerCore {
     catch (Exception e) {
       return false;
     }
-  }
-
-  public static void dumpPluginClassStatistics() {
-    ourPluginClasses.dumpPluginClassStatistics();
   }
 
   private static boolean isDependent(@NotNull IdeaPluginDescriptor descriptor,
@@ -473,10 +487,12 @@ public class PluginManagerCore {
       return null;
     }
 
-    //if a plugin does not include any module dependency tags in its plugin.xml,it's assumed to be a legacy plugin and is loaded only in IntelliJ IDEA, so it may use classes from Java plugin
+    // If a plugin does not include any module dependency tags in its plugin.xml, it's assumed to be a legacy plugin
+    // and is loaded only in IntelliJ IDEA, so it may use classes from Java plugin.
     boolean isLegacyPlugin = !hasModuleDependencies(descriptor);
-    //many custom plugins use classes from Java plugin and don't declare a dependency on the Java module (although they declare dependency on some other platform modules).
-    //this is definitely a misconfiguration but let's temprary add the Java plugin to their dependencies to avoid breaking compatibility
+    // Many custom plugins use classes from Java plugin and don't declare a dependency on the Java module (although they declare dependency
+    // on some other platform modules). This is definitely a misconfiguration but lets temporary add the Java plugin to their dependencies
+    // to avoid breaking compatibility.
     boolean isCustomPlugin = !descriptor.isBundled();
     return isLegacyPlugin || isCustomPlugin ? ourModulesToContainingPlugins.get("com.intellij.modules.java") : null;
   }
@@ -508,46 +524,49 @@ public class PluginManagerCore {
     Extensions.registerAreaClass(ExtensionAreas.IDEA_MODULE, ExtensionAreas.IDEA_PROJECT);
   }
 
-  @NotNull
-  private static Method getAddUrlMethod(@NotNull ClassLoader loader) {
-    return ReflectionUtil.getDeclaredMethod(loader instanceof URLClassLoader ? URLClassLoader.class : loader.getClass(), "addURL", URL.class);
-  }
-
   @Nullable
   private static ClassLoader createPluginClassLoader(@NotNull File[] classPath,
                                                      @NotNull ClassLoader[] parentLoaders,
-                                                     @NotNull IdeaPluginDescriptor pluginDescriptor) {
-    if (pluginDescriptor.getUseIdeaClassLoader()) {
+                                                     @NotNull IdeaPluginDescriptor descriptor) {
+    if (descriptor.getUseIdeaClassLoader()) {
+      ClassLoader loader = PluginManagerCore.class.getClassLoader();
       try {
-        ClassLoader loader = PluginManagerCore.class.getClassLoader();
-        Method addUrlMethod = getAddUrlMethod(loader);
+        // the method can't be invoked directly, because the core classloader is created at bootstrap in a "lost" branch
+        MethodHandle addURL = MethodHandles.lookup().findVirtual(loader.getClass(), "addURL", MethodType.methodType(void.class, URL.class));
         for (File pathElement : classPath) {
-          addUrlMethod.invoke(loader, pathElement.toPath().normalize().toUri().toURL());
+          try {
+            addURL.invoke(loader, classpathElementToUrl(pathElement));
+          }
+          catch (MalformedURLException e) {
+            throw new PluginException("Corrupted path element: `" + pathElement + '`', e, descriptor.getPluginId());
+          }
         }
         return loader;
       }
-      catch (IOException | IllegalAccessException | InvocationTargetException e) {
-        getLogger().warn(e);
+      catch (Throwable t) {
+        //noinspection GraziInspection
+        throw new IllegalStateException("Unexpected core classloader: " + loader + " (" + loader.getClass() + ")", t);
       }
     }
-
-    PluginId pluginId = pluginDescriptor.getPluginId();
-    File pluginRoot = pluginDescriptor.getPath();
-
-    if (isUnitTestMode && !ourUnitTestWithBundledPlugins) return null;
-
-    try {
+    else if (isUnitTestMode && !ourUnitTestWithBundledPlugins) {
+      return null;
+    }
+    else {
       List<URL> urls = new ArrayList<>(classPath.length);
       for (File pathElement : classPath) {
-        urls.add(pathElement.toPath().normalize().toUri().toURL());  // it is critical not to have "." and ".." in classpath elements
+        try {
+          urls.add(classpathElementToUrl(pathElement));
+        }
+        catch (MalformedURLException e) {
+          throw new PluginException("Corrupted path element: `" + pathElement + '`', e, descriptor.getPluginId());
+        }
       }
-      return new PluginClassLoader(urls, parentLoaders, pluginId, pluginDescriptor.getVersion(), pluginRoot);
+      return new PluginClassLoader(urls, parentLoaders, descriptor.getPluginId(), descriptor.getVersion(), descriptor.getPath());
     }
-    catch (IOException e) {
-      getLogger().warn(e);
-    }
+  }
 
-    return null;
+  private static URL classpathElementToUrl(File cpElement) throws MalformedURLException {
+    return cpElement.toPath().normalize().toUri().toURL();  // it is important not to have "." and ".." in classpath elements
   }
 
   public static void invalidatePlugins() {
@@ -1249,15 +1268,14 @@ public class PluginManagerCore {
     boolean parallel = SystemProperties.getBooleanProperty("parallel.pluginDescriptors.loading", true);
     try (LoadDescriptorsContext context = new LoadDescriptorsContext(parallel)) {
       loadDescriptorsFromDir(new File(PathManager.getPluginsPath()), result, false, context);
-      Application application = ApplicationManager.getApplication();
-      if (application == null || !application.isUnitTestMode()) {
+      if (!isUnitTestMode) {
         loadDescriptorsFromDir(new File(PathManager.getPreInstalledPluginsPath()), result, true, context);
       }
 
       loadDescriptorsFromProperty(result, context);
       loadDescriptorsFromClassPath(urlsFromClassPath, result, context, platformPluginURL);
 
-      if (application != null && application.isUnitTestMode() && result.size() <= 1) {
+      if (isUnitTestMode && result.size() <= 1) {
         // We're running in unit test mode but the classpath doesn't contain any plugins; try to load bundled plugins anyway
         ourUnitTestWithBundledPlugins = true;
         loadDescriptorsFromDir(new File(PathManager.getPreInstalledPluginsPath()), result, true, context);
@@ -1475,7 +1493,9 @@ public class PluginManagerCore {
 
     List<String> errors = new ArrayList<>();
     IdeaPluginDescriptorImpl[] pluginDescriptors = loadDescriptors(errors);
-    checkEssentialPluginsAreAvailable(pluginDescriptors);
+    if (!isUnitTestMode) {
+      checkEssentialPluginsAreAvailable(pluginDescriptors);
+    }
 
     Class callerClass = ReflectionUtil.findCallerClass(1);
     assert callerClass != null;

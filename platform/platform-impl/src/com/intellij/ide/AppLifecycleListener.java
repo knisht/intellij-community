@@ -3,8 +3,8 @@ package com.intellij.ide;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.wm.IdeFrame;
 import com.intellij.util.messages.Topic;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +21,14 @@ public interface AppLifecycleListener {
   /**
    * Called before an application frame is shown.
    */
-  default void appFrameCreated(@NotNull List<String> commandLineArgs, @NotNull Ref<? super Boolean> willOpenProject) { }
+  @Deprecated
+  @ApiStatus.ScheduledForRemoval
+  default void appFrameCreated(@NotNull List<String> commandLineArgs, @SuppressWarnings("unused") @NotNull Ref<? super Boolean> willOpenProject) {
+    appFrameCreated(commandLineArgs);
+  }
+
+  default void appFrameCreated(@NotNull List<String> commandLineArgs) {
+  }
 
   /**
    * Called when the welcome screen is displayed (not called if the application opens a project).
@@ -32,13 +39,6 @@ public interface AppLifecycleListener {
    * Called after an application frame is shown.
    */
   default void appStarting(@Nullable Project projectFromCommandLine) {
-  }
-
-  /**
-   * Called after an application frame is shown.
-   */
-  default void appStarting(@Nullable Project projectFromCommandLine, IdeFrame frame) {
-    appStarting(projectFromCommandLine);
   }
 
   /**

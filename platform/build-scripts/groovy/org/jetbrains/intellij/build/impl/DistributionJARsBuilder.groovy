@@ -105,7 +105,6 @@ class DistributionJARsBuilder {
       getPlatformApiModules(productLayout).each {
         withModule(it, "platform-api.jar")
       }
-      // NOTE: If you change the name of this jar, make sure to update BootstrapClassLoaderUtil.MAIN_RUNNER_JAR
       getPlatformImplModules(productLayout).each {
         withModule(it, "platform-impl.jar")
       }
@@ -160,6 +159,8 @@ class DistributionJARsBuilder {
       withModule("intellij.platform.resources.en", productLayout.mainJarName)
       withModule("intellij.platform.jps.model.serialization", "jps-model.jar")
       withModule("intellij.platform.jps.model.impl", "jps-model.jar")
+
+      withModule("intellij.platform.externalSystem.rt", "external-system-rt.jar")
 
       if (allProductDependencies.contains("intellij.platform.coverage")) {
         withModule("intellij.platform.coverage", productLayout.mainJarName)

@@ -11,15 +11,15 @@ import com.intellij.openapi.ui.JBPopupMenu;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Condition;
-import com.intellij.openapi.util.SystemInfoRt;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.ui.scale.JBUIScale;
 import com.intellij.util.Consumer;
 import com.intellij.util.ReflectionUtil;
 import com.intellij.util.ui.JBInsets;
-import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -156,7 +156,7 @@ public class SearchTextField extends JPanel {
     }
 
     myTextField.putClientProperty("JTextField.variant", "search");
-    myTextField.putClientProperty("JTextField.Search.Gap", JBUI.scale(6));
+    myTextField.putClientProperty("JTextField.Search.Gap", JBUIScale.scale(6));
     myTextField.putClientProperty("JTextField.Search.CancelAction", (ActionListener)e -> {
       myTextField.setText("");
       onFieldCleared();
@@ -209,18 +209,26 @@ public class SearchTextField extends JPanel {
     }
   }
 
+  /**
+   * @deprecated unused
+   */
   @Deprecated
+  @SuppressWarnings("unused")
   protected boolean isSearchControlUISupported() {
     return true;
   }
 
+  /**
+   * @deprecated unused
+   */
   @Deprecated
+  @SuppressWarnings("unused")
   protected boolean hasIconsOutsideOfTextField() {
     return false;
   }
 
   protected boolean customSetupUIAndTextField(@NotNull TextFieldWithProcessing textField, @NotNull Consumer<? super TextUI> uiConsumer) {
-    if (SystemInfoRt.isMac) {
+    if (SystemInfo.isMac) {
       try {
         Class<?> uiClass = UIUtil.isUnderIntelliJLaF() ? Class.forName("com.intellij.ide.ui.laf.intellij.MacIntelliJTextFieldUI")
                                                        : Class.forName("com.intellij.ide.ui.laf.darcula.ui.DarculaTextFieldUI");
@@ -494,6 +502,9 @@ public class SearchTextField extends JPanel {
     return false;
   }
 
+  /**
+   * @deprecated unused
+   */
   @Deprecated
   @SuppressWarnings("unused")
   public void setSearchIcon(final Icon icon) {

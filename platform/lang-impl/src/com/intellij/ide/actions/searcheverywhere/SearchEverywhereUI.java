@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.ide.actions.searcheverywhere;
 
 import com.google.common.collect.Lists;
@@ -37,6 +37,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Pair;
+import com.intellij.openapi.wm.ToolWindowId;
+import com.intellij.openapi.wm.ex.ToolWindowManagerEx;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
@@ -46,6 +48,7 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.fields.ExtendableTextComponent;
 import com.intellij.ui.components.fields.ExtendableTextField;
 import com.intellij.ui.popup.PopupUpdateProcessor;
+import com.intellij.ui.scale.JBUIScale;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.usages.*;
 import com.intellij.usages.impl.UsageViewManagerImpl;
@@ -58,6 +61,7 @@ import com.intellij.util.diff.FilesTooBigForDiffException;
 import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.text.MatcherHolder;
 import com.intellij.util.ui.EmptyIcon;
+import com.intellij.util.ui.JBInsets;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
@@ -398,7 +402,7 @@ public class SearchEverywhereUI extends BigPopupUI implements DataProvider, Quic
 
           @Override
           public int getIconGap() {
-            return JBUI.scale(10);
+            return JBUIScale.scale(10);
           }
         };
       }
@@ -496,7 +500,7 @@ public class SearchEverywhereUI extends BigPopupUI implements DataProvider, Quic
     @Override
     public Dimension getPreferredSize() {
       Dimension size = super.getPreferredSize();
-      size.height = JBUI.scale(29);
+      size.height = JBUIScale.scale(29);
       return size;
     }
 
@@ -998,7 +1002,7 @@ public class SearchEverywhereUI extends BigPopupUI implements DataProvider, Quic
       }
       setFont(UIUtil.getLabelFont().deriveFont(UIUtil.getFontSize(UIUtil.FontSize.SMALL)));
       append("... more", SMALL_LABEL_ATTRS);
-      setIpad(JBUI.insets(1, 7));
+      setIpad(JBInsets.create(1, 7));
       setMyBorder(null);
     }
   };
@@ -1438,6 +1442,8 @@ public class SearchEverywhereUI extends BigPopupUI implements DataProvider, Quic
     public void update(@NotNull AnActionEvent e) {
       SearchEverywhereContributor<?> contributor = mySelectedTab == null ? null : mySelectedTab.contributor;
       e.getPresentation().setEnabled(contributor == null || contributor.showInFindResults());
+      e.getPresentation().setIcon(
+        ToolWindowManagerEx.getInstanceEx(myProject).getLocationIcon(ToolWindowId.FIND, AllIcons.General.Pin_tab));
     }
   }
 

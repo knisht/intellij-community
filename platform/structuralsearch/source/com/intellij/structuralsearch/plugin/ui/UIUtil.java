@@ -9,6 +9,7 @@ import com.intellij.ide.IdeTooltip;
 import com.intellij.ide.IdeTooltipManager;
 import com.intellij.lang.Language;
 import com.intellij.lang.injection.InjectedLanguageManager;
+import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
@@ -25,6 +26,7 @@ import com.intellij.openapi.fileTypes.FileTypes;
 import com.intellij.openapi.fileTypes.LanguageFileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.Balloon;
+import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.wm.ToolWindowId;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
@@ -58,7 +60,7 @@ public class UIUtil {
   @NonNls private static final String SS_GROUP = "structuralsearchgroup";
 
   public static final NotificationGroup SSR_NOTIFICATION_GROUP =
-    NotificationGroup.toolWindowGroup(SSRBundle.message("structural.search.title"), ToolWindowId.FIND);
+    new NotificationGroup(SSRBundle.message("structural.search.title"), NotificationDisplayType.STICKY_BALLOON, true, ToolWindowId.FIND);
 
   @NonNls public static final String TEXT = "TEXT";
   @NonNls public static final String TEXT_HIERARCHY = "TEXT HIERARCHY";
@@ -197,6 +199,9 @@ public class UIUtil {
     completeMatchInfo.addMouseListener(new MouseAdapter() {
       @Override
       public void mouseEntered(MouseEvent ignore) {
+        if (Registry.is("ssr.use.editor.inlays.instead.of.tool.tips") && Registry.is("ssr.use.new.search.dialog")) {
+          return;
+        }
         final Configuration configuration = configurationProducer.get();
         if (configuration == null) {
           return;
@@ -258,10 +263,10 @@ public class UIUtil {
 
   public static LanguageFileType detectFileType(@NotNull SearchContext searchContext) {
     final PsiFile file = searchContext.getFile();
-    PsiElement context = file;
+    PsiElement context = null;
 
     final Editor editor = searchContext.getEditor();
-    if (editor != null && context != null) {
+    if (editor != null && file != null) {
       final int offset = editor.getCaretModel().getOffset();
       context = InjectedLanguageManager.getInstance(searchContext.getProject()).findInjectedElementAt(file, offset);
       if (context == null) {
@@ -269,6 +274,9 @@ public class UIUtil {
       }
       if (context != null) {
         context = context.getParent();
+      }
+      if (context == null) {
+        context = file;
       }
     }
     if (context != null) {
@@ -283,9 +291,10 @@ public class UIUtil {
   }
 
   @NotNull
-  public static Document createDocument(@NotNull Project project, @NotNull LanguageFileType fileType, Language dialect, @NotNull String text,
-                                        @NotNull StructuralSearchProfile profile) {
-    PsiFile codeFragment = profile.createCodeFragment(project, text);
+  public static Document createDocument(@NotNull Project project, @NotNull LanguageFileType fileType, Language dialect,
+                                        PatternContext patternContext, @NotNull String text, @NotNull StructuralSearchProfile profile) {
+    final String contextId = (patternContext == null) ? null : patternContext.getId();
+    PsiFile codeFragment = profile.createCodeFragment(project, text, contextId);
     if (codeFragment == null) {
       codeFragment = createFileFragment(project, fileType, dialect, text);
     }
@@ -302,7 +311,7 @@ public class UIUtil {
   @NotNull
   public static Editor createEditor(@NotNull Project project, @NotNull LanguageFileType fileType, Language dialect, @NotNull String text,
                                     @NotNull StructuralSearchProfile profile) {
-    PsiFile codeFragment = profile.createCodeFragment(project, text);
+    PsiFile codeFragment = profile.createCodeFragment(project, text, null);
     if (codeFragment == null) {
       codeFragment = createFileFragment(project, fileType, dialect, text);
     }

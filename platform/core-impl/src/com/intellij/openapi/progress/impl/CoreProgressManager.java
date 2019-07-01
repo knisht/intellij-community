@@ -29,6 +29,7 @@ import org.jetbrains.annotations.*;
 import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -625,15 +626,14 @@ public class CoreProgressManager extends ProgressManager implements Disposable {
 
   @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
   final void updateShouldCheckCanceled() {
-    boolean hasCanceledIndicator;
     synchronized (threadsUnderIndicator) {
-      hasCanceledIndicator = !threadsUnderCanceledIndicator.isEmpty();
+      CheckCanceledHook hook = createCheckCanceledHook();
+      boolean hasCanceledIndicator = !threadsUnderCanceledIndicator.isEmpty();
+      ourCheckCanceledHook = hook;
+      ourCheckCanceledBehavior = hook == null && !hasCanceledIndicator ? CheckCanceledBehavior.NONE :
+                                 hasCanceledIndicator && ENABLED ? CheckCanceledBehavior.INDICATOR_PLUS_HOOKS :
+                                 CheckCanceledBehavior.ONLY_HOOKS;
     }
-    CheckCanceledHook hook = createCheckCanceledHook();
-    ourCheckCanceledHook = hook;
-    ourCheckCanceledBehavior = hook == null && !hasCanceledIndicator ? CheckCanceledBehavior.NONE :
-                               hasCanceledIndicator && ENABLED ? CheckCanceledBehavior.INDICATOR_PLUS_HOOKS :
-                               CheckCanceledBehavior.ONLY_HOOKS;
   }
 
   @Nullable
@@ -809,14 +809,18 @@ public class CoreProgressManager extends ProgressManager implements Disposable {
   }
 
   private void checkLaterThreadsAreUnblocked() {
-    AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
-      if (isAnyPrioritizedThreadBlocked()) {
-        checkLaterThreadsAreUnblocked();
-      }
-      else {
-        restorePrioritizing();
-      }
-    }, 5, TimeUnit.MILLISECONDS);
+    try {
+      AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
+        if (isAnyPrioritizedThreadBlocked()) {
+          checkLaterThreadsAreUnblocked();
+        }
+        else {
+          restorePrioritizing();
+        }
+      }, 5, TimeUnit.MILLISECONDS);
+    }
+    catch (RejectedExecutionException ignore) {
+    }
   }
 
   private void stopAllPrioritization() {

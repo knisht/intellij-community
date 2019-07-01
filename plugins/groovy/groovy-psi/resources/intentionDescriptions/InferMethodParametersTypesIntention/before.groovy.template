@@ -1,4 +1,4 @@
-void append(a, b) {
+void append(<spot>a</spot>, <spot>b</spot>) {
   a.add(b)
 }
 

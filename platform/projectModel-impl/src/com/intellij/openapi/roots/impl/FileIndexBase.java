@@ -16,6 +16,7 @@
 package com.intellij.openapi.roots.impl;
 
 import com.intellij.injected.editor.VirtualFileWindow;
+import com.intellij.notebook.editor.BackedVirtualFile;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.fileTypes.FileTypeRegistry;
 import com.intellij.openapi.module.Module;
@@ -90,6 +91,7 @@ abstract class FileIndexBase implements FileIndex {
     if (file instanceof VirtualFileWindow) {
       file = ((VirtualFileWindow)file).getDelegate();
     }
+    file = BackedVirtualFile.getOriginFileIfBacked(file);
     return myDirectoryIndex.getInfoForFile(file);
   }
 
@@ -106,7 +108,7 @@ abstract class FileIndexBase implements FileIndex {
       ModuleRootManager.getInstance(module).getSourceRoots()};
   }
 
-  boolean isInContent(@NotNull VirtualFile file, @NotNull DirectoryInfo info) {
+  protected boolean isInContent(@NotNull VirtualFile file, @NotNull DirectoryInfo info) {
     return ProjectFileIndexImpl.isFileInContent(file, info);
   }
 }

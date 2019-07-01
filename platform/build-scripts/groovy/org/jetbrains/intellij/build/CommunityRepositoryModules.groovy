@@ -60,6 +60,7 @@ class CommunityRepositoryModules {
     "intellij.platform.lvcs.impl",
     "intellij.platform.ide.impl",
     "intellij.platform.projectModel.impl",
+    "intellij.platform.externalSystem.impl",
     "intellij.platform.scriptDebugger.protocolReaderRuntime",
     "intellij.regexp",
     "intellij.platform.remoteServers.impl",
@@ -228,6 +229,10 @@ class CommunityRepositoryModules {
       withResource("resources/jediterm-bash.in", "")
       withResource("resources/fish/config.fish", "fish")
     },
+    plugin("intellij.textmate") {
+      withResource("lib/bundles", "lib/bundles")
+      withResource("lib/themes", "lib/themes")
+    },
     PythonCommunityPluginModules.pythonCommunityPluginLayout(),
     // required for android plugin
     plugin("intellij.android.smali") {
@@ -278,10 +283,8 @@ class CommunityRepositoryModules {
       withModule("intellij.android.adt.ui.model", "adt-ui.jar")
       withModule("intellij.android.layoutlib", "layoutlib-loader.jar")
 
-      withModule("android.sdktools.deployer", "sdk-tools.jar")
-      withModule("android.sdktools.perflib", "sdk-tools.jar")
-      withModule("android.sdktools.layoutinspector", "sdk-tools.jar")
-      withModule("android.sdktools.usb-devices", "sdk-tools.jar")
+      withModule("android.sdktools.instant-run-client", "sdk-tools.jar")
+      withModule("android.sdktools.instant-run-common", "sdk-tools.jar")
 
       withModule("intellij.android.jps", "jps/android-jps-plugin.jar", null)
 
@@ -331,6 +334,9 @@ class CommunityRepositoryModules {
       withProjectLibrary("com.android.tools.build:builder-model")
       withProjectLibrary("com.android.tools.build:builder-test-api")
       withProjectLibrary("com.android.tools.pixelprobe:pixelprobe")
+
+      withProjectLibrary("org.jetbrains.intellij.deps.android.tools:perflib")
+      withProjectLibrary("org.jetbrains.intellij.deps.android.tools:layoutInspector")
 
       additionalModulesToJars.entrySet().each {
         withModule(it.key, it.value)
